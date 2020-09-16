@@ -1,11 +1,59 @@
 package server
 
 import (
-	//"encoding/json"
-	//"fmt"
+	"encoding/json"
+	"fmt"
 
 	"github.com/gomodule/redigo/redis"
 )
+
+ type User struct{
+	Key string	`json:"key"`
+	Value int	`json:"value"`
+ }
+
+ func SetStruct(c redis.Conn) error {
+	 
+	usr:= User{
+		Key: "age",
+		Value: 19,
+	}
+
+	// serialize User object to JSON
+	json,err:= json.Marshal(usr)
+	if err != nil {
+		return err
+	}
+
+	//SET object
+	_,err = c.Do("SET",  usr.Value, json)
+	if err != nil {
+		return err
+	}
+
+	return err
+
+ }
+
+
+ func GetStruct(c redis.Conn) error {
+
+	key := "age"
+	s, err := redis.String(c.Do("GET", key))
+	if err == redis.ErrNil {
+		fmt.Println("User does not exist")
+	} else if err != nil {
+		return err
+	}
+
+	usr := User{}
+	err = json.Unmarshal([]byte(s), &usr)
+
+	fmt.Printf("%+v\n", usr)
+
+	return nil
+
+}
 
 func NewPool() *redis.Pool {
 	return &redis.Pool{
