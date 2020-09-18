@@ -7,11 +7,13 @@ import (
 	"github.com/gomodule/redigo/redis"
 )
 
+//User ...
  type User struct{
 	Key string	`json:"key"`
 	Value int	`json:"value"`
  }
 
+ //SetStruct ...
  func SetStruct(c redis.Conn) error {
 	 
 	usr:= User{
@@ -35,7 +37,7 @@ import (
 
  }
 
-
+//GetStruct ...
  func GetStruct(c redis.Conn) error {
 
 	key := "age"
@@ -55,6 +57,7 @@ import (
 
 }
 
+//NewPool пул соединений
 func NewPool() *redis.Pool {
 	return &redis.Pool{
 		// Maximum number of idle connections in the pool.
