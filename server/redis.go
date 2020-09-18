@@ -1,10 +1,10 @@
 package server
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 
-	"github.com/gomodule/redigo/redis"
+	"github.com/go-redis/redis/v8"
 )
 
 //User ...
@@ -13,65 +13,33 @@ import (
 	Value int	`json:"value"`
  }
 
- //SetStruct ...
- func SetStruct(c redis.Conn) error {
-	 
-	usr:= User{
-		Key: "age",
-		Value: 19,
-	}
+ var ctx = context.Background()
 
-	// serialize User object to JSON
-	json,err:= json.Marshal(usr)
-	if err != nil {
-		return err
-	}
+ func ExampleNewClient() {
+    rdb := redis.NewClient(&redis.Options{
+        Addr:     "localhost:6379",
+        Password: "", // no password set
+        DB:       0,  // use default DB
+    })
+    err := rdb.Set(ctx, "key", "value", 0).Err()
+    if err != nil {
+        panic(err)
+    }
 
-	//SET object
-	_,err = c.Do("SET",  usr.Value, json)
-	if err != nil {
-		return err
-	}
+    val, err := rdb.Get(ctx, "key").Result()
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println("key", val)
 
-	return err
-
- }
-
-//GetStruct ...
- func GetStruct(c redis.Conn) error {
-
-	key := "age"
-	s, err := redis.String(c.Do("GET", key))
-	if err == redis.ErrNil {
-		fmt.Println("User does not exist")
-	} else if err != nil {
-		return err
-	}
-
-	usr := User{}
-	err = json.Unmarshal([]byte(s), &usr)
-
-	fmt.Printf("%+v\n", usr)
-
-	return nil
-
-}
-
-//NewPool пул соединений
-func NewPool() *redis.Pool {
-	return &redis.Pool{
-		// Maximum number of idle connections in the pool.
-		MaxIdle: 80,
-		// max number of connections
-		MaxActive: 12000,
-		// Dial is an application supplied function for creating and
-		// configuring a connection.
-		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial("tcp", ":6379")
-			if err != nil {
-				panic(err.Error())
-			}
-			return c, err
-		},
-	}
+    val2, err := rdb.Get(ctx, "key2").Result()
+    if err == redis.Nil {
+        fmt.Println("key2 does not exist")
+    } else if err != nil {
+        panic(err)
+    } else {
+        fmt.Println("key2", val2)
+    }
+    // Output: key value
+    // key2 does not exist
 }
