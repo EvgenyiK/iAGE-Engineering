@@ -2,7 +2,11 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
+	"strconv"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -15,31 +19,36 @@ import (
 
  var ctx = context.Background()
 
- func ExampleNewClient() {
+ //ExampleNewClient ...
+ func ExampleNewClient(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Context-Type", "application/json")
+    w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST")
+    w.Header().Set("Access-Control-Allow-Origin", "Content-Type")
+    
+    var user User
+
+    err:= json.NewDecoder(r.Body).Decode(&user)
     rdb := redis.NewClient(&redis.Options{
         Addr:     "localhost:6379",
         Password: "", // no password set
         DB:       0,  // use default DB
     })
-    err := rdb.Set(ctx, "key", "value", 0).Err()
+    err = rdb.Set(ctx, user.Key, user.Value, 0).Err()
     if err != nil {
-        panic(err)
+        log.Fatal(err)
     }
 
-    val, err := rdb.Get(ctx, "key").Result()
+    val, err := rdb.Get(ctx, user.Key).Result()
     if err != nil {
-        panic(err)
+        log.Fatal(err)
     }
-    fmt.Println("key", val)
+    incrVal,err:= strconv.Atoi(val)
+    if err != nil {
+        log.Fatal(err)
+    }
+    sum:= incrVal + 1
+    fmt.Println("value", sum)
 
-    val2, err := rdb.Get(ctx, "key2").Result()
-    if err == redis.Nil {
-        fmt.Println("key2 does not exist")
-    } else if err != nil {
-        panic(err)
-    } else {
-        fmt.Println("key2", val2)
-    }
-    // Output: key value
-    // key2 does not exist
+    json.NewEncoder(w).Encode(sum)
 }
